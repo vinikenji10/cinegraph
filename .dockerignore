@@ -1,0 +1,20 @@
+# Arquivos enviados ao Cloud Build no `gcloud run deploy --source .`
+# (o que não está listado aqui é enviado).
+.git
+.gitignore
+.venv/
+.claude/
+**/__pycache__/
+.pytest_cache/
+.env
+.env.*
+data/raw/
+data/models/
+data/processed/profiles.jsonl
+reports/
+eval/
+docs/
+tests/
+web/
+notebooks/
+*.pptx

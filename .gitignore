@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Segredos (a chave da API fica só no .env local e no Secret Manager)
+.env
+.env.*
+!.env.example
+
+# Dados: a licença do MovieLens não permite redistribuir. Recrie com `uv run cinegraph download build-db build-index`.
+data/
+
+# Gerado no deploy a partir do uv.lock
+requirements.txt
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Saídas brutas da avaliação (o resumo em reports/ é versionado)
+reports/runs/

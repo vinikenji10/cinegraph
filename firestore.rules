@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// O navegador nunca acessa o Firestore diretamente: tudo passa pela API no
+// Cloud Run, que usa credencial de serviço (e por isso ignora estas regras).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

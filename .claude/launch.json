@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cinegraph-local",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["CINEGRAPH_DEV_NO_AUTH=1", "uv", "run", "uvicorn", "cinegraph.api:app", "--port", "8766"],
+      "port": 8766
+    }
+  ]
+}

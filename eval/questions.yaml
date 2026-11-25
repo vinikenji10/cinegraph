@@ -1,0 +1,453 @@
+# Conjunto de perguntas de teste do CineGraph (rascunho para revisão do grupo).
+#
+# category / expected_route:
+#   sql      -> perguntas objetivas; gold_sql é a resposta de referência
+#   semantic -> tema, atmosfera ou semelhança; intent orienta o juiz de relevância
+#   mixed    -> critério subjetivo + filtros objetivos; constraints são verificadas no banco
+#   outro    -> fora do escopo
+#
+# compare (só sql):
+#   ordered -> lista de movie_id na ordem (rankings)
+#   scalar  -> o primeiro valor da primeira linha do gold precisa aparecer na resposta
+#
+# Convenções do gold (as mesmas do prompt de SQL): "mais bem avaliados" ordena por
+# bayes_rating; "mais populares" por n_ratings; desempate por movie_id.
+
+- id: S01
+  category: sql
+  question: Quais são os 5 filmes de ação mais bem avaliados?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Action') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S02
+  category: sql
+  question: Quais são os 10 filmes mais populares do acervo, com mais avaliações?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m ORDER BY m.n_ratings DESC, m.movie_id LIMIT 10
+- id: S03
+  category: sql
+  question: Quantos filmes de terror existem no acervo?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movie_genres WHERE genre = 'Horror'
+- id: S04
+  category: sql
+  question: Quantos filmes de animação foram lançados nos anos 2000?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movies m WHERE m.year BETWEEN 2000 AND 2009 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Animation')
+- id: S05
+  category: sql
+  question: Qual é a nota média de Pulp Fiction?
+  compare: scalar
+  gold_sql: SELECT ROUND(avg_rating, 2) FROM movies WHERE movie_id = 296
+- id: S06
+  category: sql
+  question: Quais são os 5 dramas mais bem avaliados lançados antes de 1970?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year < 1970 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Drama') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S07
+  category: sql
+  question: Me dê o top 5 de ficção científica lançada depois de 2010, pela nota.
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year > 2010 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Sci-Fi') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S08
+  category: sql
+  question: Quantas avaliações o acervo tem no total?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM ratings
+- id: S09
+  category: sql
+  question: Qual é a nota média de todas as avaliações do acervo?
+  compare: scalar
+  gold_sql: SELECT ROUND(AVG(rating), 2) FROM ratings
+- id: S10
+  category: sql
+  question: Quantas avaliações Forrest Gump recebeu?
+  compare: scalar
+  gold_sql: SELECT n_ratings FROM movies WHERE movie_id = 356
+- id: S11
+  category: sql
+  question: Quais são os 3 faroestes mais bem avaliados?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Western') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 3
+- id: S12
+  category: sql
+  question: Quantos filmes do acervo foram lançados em 1995?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movies WHERE year = 1995
+- id: S13
+  category: sql
+  question: Em que ano foram lançados mais filmes do acervo?
+  compare: scalar
+  gold_sql: SELECT year, COUNT(*) AS n FROM movies WHERE year IS NOT NULL GROUP BY year ORDER BY n DESC, year LIMIT 1
+- id: S14
+  category: sql
+  question: Quais são as 5 comédias mais populares dos anos 90?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year BETWEEN 1990 AND 1999 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Comedy') ORDER BY m.n_ratings DESC, m.movie_id LIMIT 5
+- id: S15
+  category: sql
+  question: Quantos gêneros diferentes existem no acervo?
+  compare: scalar
+  gold_sql: SELECT COUNT(DISTINCT genre) FROM movie_genres
+- id: S16
+  category: sql
+  question: Quais são os 5 filmes com a maior média simples entre os que têm pelo menos 50 avaliações?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.n_ratings >= 50 ORDER BY m.avg_rating DESC, m.movie_id LIMIT 5
+- id: S17
+  category: sql
+  question: Quantos filmes têm média 4 ou mais e pelo menos 20 avaliações?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movies WHERE avg_rating >= 4 AND n_ratings >= 20
+- id: S18
+  category: sql
+  question: Quais são os 5 filmes de guerra mais bem avaliados?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'War') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S19
+  category: sql
+  question: Quais são os 5 thrillers mais avaliados lançados depois de 2000?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year > 2000 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Thriller') ORDER BY m.n_ratings DESC, m.movie_id LIMIT 5
+- id: S20
+  category: sql
+  question: Quantos filmes receberam a tag "pixar"?
+  compare: scalar
+  gold_sql: SELECT COUNT(DISTINCT movie_id) FROM movie_tags WHERE tag = 'pixar'
+- id: S21
+  category: sql
+  question: Qual é a média de todas as avaliações dadas a filmes de animação?
+  compare: scalar
+  gold_sql: SELECT ROUND(AVG(r.rating), 2) FROM ratings r WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = r.movie_id AND g.genre = 'Animation')
+- id: S22
+  category: sql
+  question: Quantos filmes dos anos 80 são ao mesmo tempo de terror e comédia?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movies m WHERE m.year BETWEEN 1980 AND 1989 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Horror') AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Comedy')
+- id: S23
+  category: sql
+  question: Quais são os 5 romances mais bem avaliados dos anos 2000?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year BETWEEN 2000 AND 2009 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Romance') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S24
+  category: sql
+  question: Quais são os 5 documentários mais bem avaliados?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Documentary') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+- id: S25
+  category: sql
+  question: Qual usuário fez mais avaliações? Informe o id dele.
+  compare: scalar
+  gold_sql: SELECT user_id, COUNT(*) AS n FROM ratings GROUP BY user_id ORDER BY n DESC, user_id LIMIT 1
+- id: S26
+  category: sql
+  question: Quantas avaliações foram feitas no ano de 2016?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM ratings WHERE rated_year = 2016
+- id: S27
+  category: sql
+  question: Qual a nota média de Matrix?
+  compare: scalar
+  gold_sql: SELECT ROUND(avg_rating, 2) FROM movies WHERE movie_id = 2571
+- id: S28
+  category: sql
+  question: Quais são os 5 musicais mais populares?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Musical') ORDER BY m.n_ratings DESC, m.movie_id LIMIT 5
+- id: S29
+  category: sql
+  question: Quantos filmes infantis foram lançados entre 1990 e 1999?
+  compare: scalar
+  gold_sql: SELECT COUNT(*) FROM movies m WHERE m.year BETWEEN 1990 AND 1999 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Children')
+- id: S30
+  category: sql
+  question: Quais são os 5 filmes de crime mais bem avaliados lançados entre 1990 e 2000?
+  compare: ordered
+  gold_sql: SELECT m.movie_id FROM movies m WHERE m.year BETWEEN 1990 AND 2000 AND EXISTS (SELECT 1 FROM movie_genres g WHERE g.movie_id = m.movie_id AND g.genre = 'Crime') ORDER BY m.bayes_rating DESC, m.movie_id LIMIT 5
+
+- id: V01
+  category: semantic
+  question: Quero algo melancólico sobre memória e identidade.
+  intent: filmes melancólicos ou agridoces cujo tema central é memória, esquecimento ou identidade
+- id: V02
+  category: semantic
+  question: Algo como Matrix, mas mais introspectivo.
+  intent: ficção científica sobre realidade, mente ou identidade, com tom reflexivo; não recomendar a própria trilogia Matrix
+- id: V03
+  category: semantic
+  question: Um filme que me faça pensar sobre a natureza da realidade.
+  intent: filmes que questionam o que é real (realidades simuladas, sonhos, percepção)
+- id: V04
+  category: semantic
+  question: Quero um filme leve e divertido para ver com a família.
+  intent: filmes alegres e adequados para crianças e adultos juntos
+- id: V05
+  category: semantic
+  question: Filmes com uma reviravolta no final que surpreenda.
+  intent: filmes conhecidos por final surpreendente ou plot twist
+- id: V06
+  category: semantic
+  question: Algo sombrio e atmosférico, com clima noir.
+  intent: filmes de tom sombrio, atmosfera densa, estética ou narrativa noir
+- id: V07
+  category: semantic
+  question: Filmes parecidos com Toy Story.
+  intent: animações familiares com humor e coração, no estilo Pixar; não recomendar Toy Story 1
+- id: V08
+  category: semantic
+  question: Um filme de viagem no tempo bem bolado.
+  intent: filmes em que viagem no tempo é central para a trama
+- id: V09
+  category: semantic
+  question: Quero algo inspirador sobre superação.
+  intent: histórias edificantes de pessoas superando adversidades
+- id: V10
+  category: semantic
+  question: Filmes sobre inteligência artificial e robôs.
+  intent: filmes cujo tema central são IAs, androides ou robôs
+- id: V11
+  category: semantic
+  question: Algo perturbador e psicológico que mexa com a cabeça.
+  intent: thrillers ou dramas psicológicos inquietantes, desorientadores
+- id: V12
+  category: semantic
+  question: Uma história de amor agridoce.
+  intent: romances com tom agridoce, melancólico ou final não totalmente feliz
+- id: V13
+  category: semantic
+  question: Filmes com visual deslumbrante e muito estilo.
+  intent: filmes reconhecidos pela fotografia, direção de arte ou estética marcante
+- id: V14
+  category: semantic
+  question: Algo parecido com O Senhor dos Anéis.
+  intent: fantasia épica com jornada, mundo imaginário e batalhas; não recomendar a própria trilogia
+- id: V15
+  category: semantic
+  question: Filmes sobre a máfia e o crime organizado.
+  intent: filmes centrados em máfia, gângsteres ou crime organizado
+- id: V16
+  category: semantic
+  question: Algo com humor ácido e sarcástico.
+  intent: filmes de humor negro, cínico ou satírico
+- id: V17
+  category: semantic
+  question: Filmes sobre solidão na cidade grande.
+  intent: filmes sobre isolamento, solidão ou desconexão em ambiente urbano
+- id: V18
+  category: semantic
+  question: Quero algo épico, com batalhas grandiosas.
+  intent: épicos com grandes batalhas (históricas, de fantasia ou ficção científica)
+- id: V19
+  category: semantic
+  question: Filmes que retratam a guerra de forma crua e realista.
+  intent: filmes de guerra realistas, violentos, antibelicistas
+- id: V20
+  category: semantic
+  question: Algo nostálgico sobre amadurecimento e adolescência.
+  intent: filmes coming-of-age sobre adolescência e crescer
+- id: V21
+  category: semantic
+  question: Filmes parecidos com Pulp Fiction.
+  intent: filmes de crime com diálogos marcantes, narrativa não linear, humor negro e violência estilizada; não recomendar Pulp Fiction
+- id: V22
+  category: semantic
+  question: Uma história sobre sonhos e o subconsciente.
+  intent: filmes em que sonhos, a mente ou o subconsciente são centrais
+- id: V23
+  category: semantic
+  question: Algo com clima de espionagem e conspiração.
+  intent: filmes de espionagem, agentes secretos ou conspirações
+- id: V24
+  category: semantic
+  question: Filmes que me façam chorar.
+  intent: filmes muito emocionantes, tristes ou comoventes
+- id: V25
+  category: semantic
+  question: Quero algo surreal e estranho, bem diferente do comum.
+  intent: filmes surrealistas, bizarros ou experimentais
+- id: V26
+  category: semantic
+  question: Filmes sobre exploração espacial e o desconhecido.
+  intent: filmes sobre viagens espaciais, astronautas ou contato com o desconhecido no espaço
+- id: V27
+  category: semantic
+  question: Algo parecido com Clube da Luta.
+  intent: filmes sombrios e provocativos sobre identidade, masculinidade, anarquia ou com reviravolta psicológica; não recomendar Fight Club
+- id: V28
+  category: semantic
+  question: Filmes de super-herói mais sérios e sombrios.
+  intent: filmes de super-herói com tom sombrio ou adulto
+- id: V29
+  category: semantic
+  question: Uma história de vingança intensa.
+  intent: filmes centrados em vingança
+- id: V30
+  category: semantic
+  question: Filmes sobre artistas e o processo criativo.
+  intent: filmes sobre escritores, pintores, músicos ou cineastas e seu trabalho criativo
+
+- id: H01
+  category: mixed
+  question: Comédias leves dos anos 90 com nota acima de 3,5.
+  intent: comédias leves, divertidas, feel-good
+  constraints: {genres_all: [Comedy], year_min: 1990, year_max: 1999, min_avg_rating: 3.5}
+- id: H02
+  category: mixed
+  question: Ficção científica filosófica lançada depois de 2005.
+  intent: ficção científica reflexiva, sobre questões filosóficas
+  constraints: {genres_all: [Sci-Fi], year_min: 2006}
+- id: H03
+  category: mixed
+  question: Algo como Matrix, mas lançado depois de 2010.
+  intent: ficção científica sobre realidade simulada, mente ou tecnologia, com ação
+  constraints: {year_min: 2011}
+- id: H04
+  category: mixed
+  question: Dramas melancólicos sobre memória lançados depois de 2000.
+  intent: dramas melancólicos sobre memória ou perda
+  constraints: {genres_all: [Drama], year_min: 2001}
+- id: H05
+  category: mixed
+  question: Animações emocionantes para adultos com nota acima de 4.
+  intent: animações comoventes ou maduras
+  constraints: {genres_all: [Animation], min_avg_rating: 4.0}
+- id: H06
+  category: mixed
+  question: Filmes de terror psicológico dos anos 2000.
+  intent: terror psicológico, inquietante
+  constraints: {genres_all: [Horror], year_min: 2000, year_max: 2009}
+- id: H07
+  category: mixed
+  question: Thrillers com reviravolta no final lançados antes de 2000.
+  intent: suspense com final surpreendente
+  constraints: {genres_all: [Thriller], year_max: 1999}
+- id: H08
+  category: mixed
+  question: Romances agridoces lançados entre 2010 e 2018.
+  intent: romances agridoces ou melancólicos
+  constraints: {genres_all: [Romance], year_min: 2010, year_max: 2018}
+- id: H09
+  category: mixed
+  question: Filmes de guerra realistas com nota acima de 3,8.
+  intent: filmes de guerra crus e realistas
+  constraints: {genres_all: [War], min_avg_rating: 3.8}
+- id: H10
+  category: mixed
+  question: Comédias românticas leves lançadas depois de 1995.
+  intent: comédias românticas leves e charmosas
+  constraints: {genres_all: [Comedy, Romance], year_min: 1996}
+- id: H11
+  category: mixed
+  question: Filmes de crime estilosos parecidos com Pulp Fiction, dos anos 90.
+  intent: crime com estilo, humor negro e diálogos marcantes
+  constraints: {genres_all: [Crime], year_min: 1990, year_max: 1999}
+- id: H12
+  category: mixed
+  question: Aventuras épicas de fantasia com mais de 50 avaliações.
+  intent: fantasia épica com jornada e aventura
+  constraints: {genres_all: [Fantasy], min_ratings: 51}
+- id: H13
+  category: mixed
+  question: Documentários sobre música.
+  intent: documentários sobre músicos, bandas ou cenas musicais
+  constraints: {genres_all: [Documentary]}
+- id: H14
+  category: mixed
+  question: Ficção científica sobre inteligência artificial com nota acima de 3,5.
+  intent: ficção científica sobre IA, androides ou robôs
+  constraints: {genres_all: [Sci-Fi], min_avg_rating: 3.5}
+- id: H15
+  category: mixed
+  question: Mistérios sombrios e atmosféricos lançados antes de 1980.
+  intent: mistério com atmosfera sombria
+  constraints: {genres_all: [Mystery], year_max: 1979}
+- id: H16
+  category: mixed
+  question: Filmes infantis divertidos dos anos 2000.
+  intent: filmes infantis engraçados e leves
+  constraints: {genres_all: [Children], year_min: 2000, year_max: 2009}
+- id: H17
+  category: mixed
+  question: Algo parecido com Toy Story, mas lançado depois de 2005.
+  intent: animações familiares com humor e coração
+  constraints: {year_min: 2006}
+- id: H18
+  category: mixed
+  question: Faroestes violentos e sombrios.
+  intent: faroestes de tom sombrio e violento
+  constraints: {genres_all: [Western]}
+- id: H19
+  category: mixed
+  question: Dramas inspiradores sobre esporte com nota acima de 3,5.
+  intent: dramas esportivos edificantes
+  constraints: {genres_all: [Drama], min_avg_rating: 3.5}
+- id: H20
+  category: mixed
+  question: Thrillers de espionagem lançados depois de 2000.
+  intent: suspense de espionagem
+  constraints: {genres_all: [Thriller], year_min: 2001}
+- id: H21
+  category: mixed
+  question: Comédias de humor ácido dos anos 2000 com pelo menos 20 avaliações.
+  intent: comédias de humor negro, cínico ou satírico
+  constraints: {genres_all: [Comedy], year_min: 2000, year_max: 2009, min_ratings: 20}
+- id: H22
+  category: mixed
+  question: Filmes de ação com viagem no tempo.
+  intent: filmes de ação em que viagem no tempo é central
+  constraints: {genres_all: [Action]}
+- id: H23
+  category: mixed
+  question: Animações japonesas poéticas e contemplativas.
+  intent: animes ou animações japonesas delicadas e contemplativas
+  constraints: {genres_all: [Animation]}
+- id: H24
+  category: mixed
+  question: Filmes de terror com humor dos anos 80.
+  intent: terror com elementos de comédia
+  constraints: {genres_all: [Horror], year_min: 1980, year_max: 1989}
+- id: H25
+  category: mixed
+  question: Dramas românticos de época com nota acima de 3,7.
+  intent: romances dramáticos ambientados no passado
+  constraints: {genres_all: [Drama, Romance], min_avg_rating: 3.7}
+- id: H26
+  category: mixed
+  question: Aventuras nostálgicas dos anos 80.
+  intent: aventuras clássicas e nostálgicas
+  constraints: {genres_all: [Adventure], year_min: 1980, year_max: 1989}
+- id: H27
+  category: mixed
+  question: Filmes parecidos com Clube da Luta lançados depois de 2000.
+  intent: filmes sombrios e provocativos sobre identidade ou com reviravolta psicológica
+  constraints: {year_min: 2001}
+- id: H28
+  category: mixed
+  question: Musicais alegres e coloridos.
+  intent: musicais alegres e vibrantes
+  constraints: {genres_all: [Musical]}
+- id: H29
+  category: mixed
+  question: Filmes de crime sobre a máfia com nota acima de 4.
+  intent: filmes sobre máfia ou crime organizado
+  constraints: {genres_all: [Crime], min_avg_rating: 4.0}
+- id: H30
+  category: mixed
+  question: Ficção científica sobre exploração espacial lançada entre 2010 e 2018.
+  intent: ficção científica sobre viagens espaciais e o desconhecido
+  constraints: {genres_all: [Sci-Fi], year_min: 2010, year_max: 2018}
+
+- id: O01
+  category: outro
+  question: Oi, tudo bem?
+- id: O02
+  category: outro
+  question: Quem dirigiu Pulp Fiction?
+- id: O03
+  category: outro
+  question: Onde posso assistir Matrix online?
+- id: O04
+  category: outro
+  question: Qual é a capital da França?
+- id: O05
+  category: outro
+  question: Obrigado pela ajuda!
